@@ -1,36 +1,6 @@
 import { Component } from 'react';
 import { evaluate } from 'mathjs';
-import styled from 'styled-components';
-
-const Button = styled.button`
-    width: 40px;
-    height: 40px;
-    margin: 1px;
-    background-color: orange;
-    border: 2px solid rgba(102, 102, 102, 0.3);
-    &:hover{
-        transition: all .3s ease-out;
-        background-color: #B27300;
-    }`;
-
-const Container = styled.div`
-    display: flex;
-    flex-wrap: wrap;`;
-
-const Wrapper = styled.div`
-    width: 180px;
-    padding-left: 15px;
-    padding-right: 5px;
-    padding-bottom: 15px;
-    padding-top: 15px;
-    background-color: grey;`;
-
-const Input = styled.input`
-    width: 160px;
-    height: 30px;
-    color: grey;
-    margin-bottom: 10px;
-    border: 2px solid black`;
+import { Button, Container, History, Wrapper, Input } from './style/style';
 
 export default class Calculator extends Component{
     constructor(props){
@@ -39,31 +9,67 @@ export default class Calculator extends Component{
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.handleClick = this.handleClick.bind(this);
+        this.handleDeleteElement = this.handleDeleteElement.bind(this);
+        this.handleRepeat = this.handleRepeat.bind(this);
+        this.noneHandleButton = this.noneHandleButton.bind(this);
 
         this.state = {
             value: 0,
-            state: 'none'
+            state: 'none',
+            history: []
         }
+    }
+
+    noneHandleButton(event){
+        event.preventDefault();
+    }
+
+    handleDeleteElement = id => {
+        this.setState(prevState => ({
+            history: prevState.history.filter(el => el.id !== id)
+        }));
+    }
+
+    handleRepeat = id => {
+        let pizdes = this.state.history.filter(el => el.id === id);
+        this.setState(prevState => ({
+            history: prevState.history.filter(el => el.id !== id),
+            value: pizdes[0].value,
+            state: 'none'
+        }));
     }
 
     handleClick(event){
         event.preventDefault();
-        this.setState({state: 'sum'});
         if(this.state.value === 0){
             this.setState({value: event.target.value});
         } else {
-            this.setState({value: this.state.value + event.target.value});
+            if(this.state.state === 'sum'){
+                this.setState({value: event.target.value, state: 'none'});
+            } else {
+                this.setState({value: this.state.value + event.target.value});
+            }
         }
         if(event.target.value === "CE"){
-            if(this.state.state === "sum"){
-                this.setState({value: this.state.value.substring(0, this.state.value.length - 1)});
+            if(this.state.value === 0 || this.state.state === 'sum') {
+                this.setState({value: 0});
+            } else {
+                if(this.state.value.length === 1){
+                    this.setState({value: 0});
+                } else {
+                    if(this.state.value.length){
+                        this.setState({value: this.state.value.substring(0, this.state.value.length - 1)});
+                    } else {
+                        this.setState({value: 0});
+                    }
+                }
             }
         }
         if(event.target.value === "C"){
             this.setState({value: 0, state: 'none'});
         }
     }
-
+    
     handleChange(event){
         this.setState({value: event.target.value});
     }
@@ -73,11 +79,15 @@ export default class Calculator extends Component{
         if(parseInt(this.state.value)){
             try {
                 this.setState({value: evaluate(this.state.value), state: 'sum'});
+                this.state.history.push({id: Math.random(), value: evaluate(this.state.value)});
+                
             } catch {
-                this.setState({value: 'Ошибка', state: 'none'});
+                console.log(1);
+                this.setState({value: 'Ошибка', state: 'sum'});
             }
         } else {
-            this.setState({value: 'Ошибка', state: 'none'});
+            console.log(2);
+            this.setState({value: 'Ошибка', state: 'sum'});
         }
     }
 
@@ -92,10 +102,21 @@ export default class Calculator extends Component{
                                 <Button onClick={this.handleClick} value={value} key={value}>{value}</Button>
                             ))}
 
-                            <Button style={{opacity: '0'}} >,</Button>
+                            <Button style={{opacity: '0'}} onClick={this.noneHandleButton} >,</Button>
                             <Button onClick={this.handleClick} value=".">.</Button>
                             <Button onClick={this.handleSubmit} value="=">=</Button>
                         </Wrapper>
+                </Container>
+
+                <Container>
+                    <History>
+                        Ваша история:
+                        <ul>
+                            {this.state.history.map(body => (
+                                <li key={body.id}>{body.value} <button onClick={() => { this.handleDeleteElement(body.id) }}>X</button> | <button onClick={() => { this.handleRepeat(body.id) }}>=&gt;</button></li>
+                            ))}
+                        </ul>
+                    </History>
                 </Container>
             </form>
         )
